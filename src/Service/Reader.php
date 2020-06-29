@@ -9,6 +9,7 @@ class Reader
     public const DEFAULT_PHP_MAX = 0;
     public const DEFAULT_RECIPE_MINOR_MIN = 99.9;
     public const DEFAULT_RECIPE_MINOR_MAX = 0;
+    public const DEFAULT_COMPOSER_ROOT_VERSION = 99.9; // TODO: need to read from .git somehow
 
     /**
      * @var Config
@@ -17,14 +18,14 @@ class Reader
 
     private $data = [];
 
+    public function __construct()
+    {
+        $this->setDefaultDataValues();
+    }
+
     public function setConfig(Config $config): void
     {
         $this->config = $config;
-    }
-
-    public function reset(): void
-    {
-        $this->data = [];
     }
 
     /**
@@ -42,10 +43,6 @@ class Reader
         $contents = file_get_contents("$dir/$filename");
         $lines = preg_split("/[\r\n]+/", $contents);
         $inMatrix = false;
-        $this->data['phpMin'] = self::DEFAULT_PHP_MIN;
-        $this->data['phpMax'] = self::DEFAULT_PHP_MAX;
-        $this->data['recipeMinorMin'] = self::DEFAULT_RECIPE_MINOR_MIN;
-        $this->data['recipeMinorMax'] = self::DEFAULT_RECIPE_MINOR_MAX;
         foreach ($lines as $line) {
             $line = trim($line);
             if ($line == 'matrix:') {
@@ -61,10 +58,22 @@ class Reader
                 $this->parsePhpCoverage($line);
                 $this->parsePdo($line);
             } else {
-                // not in matrix
-
+                // not in matrix (nothing?)
             }
         }
+    }
+
+    private function setDefaultDataValues()
+    {
+        $this->data['phpMin'] = self::DEFAULT_PHP_MIN;
+        $this->data['phpMax'] = self::DEFAULT_PHP_MAX;
+        $this->data['recipeMinorMin'] = self::DEFAULT_RECIPE_MINOR_MIN;
+        $this->data['recipeMinorMax'] = self::DEFAULT_RECIPE_MINOR_MAX;
+        $this->data['composerRootVersion'] = self::DEFAULT_COMPOSER_ROOT_VERSION;
+        $this->data['postgres'] = false;
+        $this->data['phpcs'] = false;
+        $this->data['phpCoverage'] = false;
+        $this->data['pdo'] = false;
     }
 
     private function parsePhpVersions(string $line): void
