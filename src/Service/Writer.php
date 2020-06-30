@@ -32,6 +32,10 @@ class Writer
         $this->addServices();
         $this->addCache();
         $this->addEnv();
+        $this->addMatrix();
+        $this->addBeforeScript();
+        $this->addScript();
+        $this->addAfterSuccess();
     }
 
     private function addLines($lines): void
@@ -93,16 +97,54 @@ class Writer
 
     private function addBeforeScript(): void
     {
-        // TODO
+        // composer require/install/update cli options:
+        // https://getcomposer.org/doc/03-cli.md
+        $lines = [
+            'before_script:',
+            '  - phpenv rehash',
+            "  - phpenv config-rm xdebug.ini",
+            '',
+            '  - composer validate',
+            // TODO: other requirements are needed sometimes
+            // TODO: consider including everything together on a single line
+            '  - composer require --no-update silverstripe/recipe-cms:$RECIPE_VERSION',
+            '  # Fix for running phpunit 5 on php 7.4+',
+            '  - composer require --no-update sminnee/phpunit-mock-objects:^3',
+        ];
+        if ($this->options['postgres']) {
+            $lines[] = '- if [[ $DB == PGSQL ]]; then composer require --no-update silverstripe/postgresql:^2; fi';
+        }
+        $lines[] = '  - composer install --prefer-dist --no-interaction --no-progress --no-suggest --optimize-autoloader --verbose --profile';
+        $lines[] = '';
+        $this->addLines($lines);
     }
 
     private function addScript(): void
     {
-        // TODO
+        // TODO: BEHAT_TEST
+        // TODO: NPM_TEST
+        $lines = [
+            '  - if [[ $PHPUNIT_TEST ]]; then vendor/bin/phpunit tests/; fi'
+        ];
+        if ($this->options['phpCoverage']) {
+            $lines[] = '  - if [[ $PHPUNIT_COVERAGE_TEST ]]; then phpdbg -qrr vendor/bin/phpunit --coverage-clover=coverage.xml; fi';
+        }
+        if ($this->options['phpcs']) {
+            $lines[] = '  - if [[ $PHPCS_TEST ]]; then vendor/bin/phpcs src/ tests/ ; fi';
+        }
+        $this->addLines($lines);
     }
 
     private function addAfterSuccess(): void
     {
-        // TODO
+        $lines = [
+            'after_success:'
+        ];
+        if ($this->options['phpCoverage']) {
+            $lines[] = '  - if [[ $PHPUNIT_COVERAGE_TEST ]]; then bash <(curl -s https://codecov.io/bash) -f coverage.xml; fi';
+        }
+        if (count($lines) > 1) {
+            $this->addLines($lines);
+        }
     }
 }
