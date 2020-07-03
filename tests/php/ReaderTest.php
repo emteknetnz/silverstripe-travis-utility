@@ -27,7 +27,5 @@ class ReaderTest extends TestCase
         $this->assertEquals(4.4, $reader->getValue('recipeMinorMin'));
         $this->assertEquals(4.6, $reader->getValue('recipeMinorMax'));
     }
-
     // TODO testB
-
 }

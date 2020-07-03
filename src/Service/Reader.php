@@ -35,12 +35,12 @@ class Reader
      */
     public function getValue(string $key)
     {
-        return isset($this->data[$key]) ? $this->data[$key] : null;
+        return $this->data[$key] ?? null;
     }
 
     public function read(string $filename): void
     {
-        $dir = $this->config->getValue('dir');
+        $dir = rtrim($this->config->getValue('dir'), '/');
         $contents = file_get_contents("$dir/$filename");
         $lines = preg_split("/[\r\n]+/", $contents);
         $inMatrix = false;

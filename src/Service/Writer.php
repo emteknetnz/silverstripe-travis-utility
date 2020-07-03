@@ -9,27 +9,27 @@ class Writer
 
     private $lines = [];
 
-    public const $required
+    public const OPTION_KEYS = [
+        'behat',
+        'coreModule',
+        'npm',
+        'pdo',
+        'phpcs',
+        'phpCoverage',
+        'phpMin',
+        'phpMax',
+        'postgres',
+        'recipeMinorMin',
+        'recipeMinorMax',
+        'recipeMajor'
+    ];
 
     public function __construct(array $options)
     {
         // TODO: pass in as param, is a combination of .config (min recipe) + reader (postgres)
         // may want to do it as $config, $readValues, and merge them in here, or somewhere else
-        $requiredKeys = [
-            'behat',
-            'coreModule',
-            'npm',
-            'pdo',
-            'phpcs',
-            'phpCoverage',
-            'phpMin',
-            'phpMax',
-            'postgres',
-            'recipeMinorMin',
-            'recipeMinorMax',
-            'recipeMajor'
-        ];
-        foreach ($requiredKeys as $key) {
+
+        foreach (self::OPTION_KEYS as $key) {
             if (!isset($options[$key])) {
                 echo "Missing options key $key\n";
                 die;
@@ -48,6 +48,9 @@ class Writer
         $this->addBeforeScript();
         $this->addScript();
         $this->addAfterSuccess();
+        $this->lines[] = '';
+        // TODO: update this
+        file_put_contents('output.txt', implode("\n", $this->lines));
     }
 
     public function getLines(): array
@@ -75,11 +78,12 @@ class Writer
     {
         $lines = [
             'services:',
-            '- mysql',
+            '  - mysql',
         ];
         if ($this->options['postgres']) {
-            $lines[] = '- postgresql';
+            $lines[] = '  - postgresql';
         }
+        // TODO: xvfb for behat
         $lines[] = '';
         $this->addLines($lines);
     }
@@ -107,23 +111,9 @@ class Writer
         $this->addLines($lines);
     }
 
-    /*
-matrix:
-  include:
-    - php: 5.6
-      env: DB=MYSQL RECIPE_VERSION=4.4.x-dev PHPUNIT_TEST=1 PHPCS_TEST=1
-    - php: 7.1
-      env: DB=MYSQL RECIPE_VERSION=4.5.x-dev PHPUNIT_COVERAGE_TEST=1 PDO=1
-    - php: 7.2
-      env: DB=PGSQL RECIPE_VERSION=4.6.x-dev PHPUNIT_TEST=1
-    - php: 7.3
-      env: DB=MYSQL RECIPE_VERSION=4.6.x-dev PHPUNIT_TEST=1
-    - php: 7.4
-      env: DB=MYSQL RECIPE_VERSION=4.x-dev PHPUNIT_TEST=1
-     */
-
     private function addMatrix(): void
     {
+        // TODO: move these to private const for better visibility
         $minMatrixLength = 5;
         $pdoPhp = 7.1;
         $postgresPhp = 7.2;
@@ -138,8 +128,6 @@ matrix:
         }
 
         // TODO: move this stuff to private methods
-
-        // TODO: unit test all this
 
         // php
         $phps = [5.6, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9];
@@ -263,14 +251,13 @@ matrix:
     {
         // TODO: BEHAT_TEST
         // TODO: NPM_TEST
-        $lines = [
-            '  - if [[ $PHPUNIT_TEST ]]; then vendor/bin/phpunit tests/; fi'
-        ];
-        if ($this->options['phpCoverage']) {
-            $lines[] = '  - if [[ $PHPUNIT_COVERAGE_TEST ]]; then phpdbg -qrr vendor/bin/phpunit --coverage-clover=coverage.xml; fi';
-        }
+        $lines = [];
         if ($this->options['phpcs']) {
             $lines[] = '  - if [[ $PHPCS_TEST ]]; then vendor/bin/phpcs src/ tests/ ; fi';
+        }
+        $lines[] = '  - if [[ $PHPUNIT_TEST ]]; then vendor/bin/phpunit tests/; fi';
+        if ($this->options['phpCoverage']) {
+            $lines[] = '  - if [[ $PHPUNIT_COVERAGE_TEST ]]; then phpdbg -qrr vendor/bin/phpunit --coverage-clover=coverage.xml; fi';
         }
         $this->addLines($lines);
     }

@@ -1,3 +1,4 @@
 .config
 composer.lock
 /vendor/
+output.txt

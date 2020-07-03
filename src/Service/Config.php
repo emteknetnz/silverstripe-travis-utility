@@ -9,9 +9,9 @@ class Config
 {
     private $data = [];
 
-    public function getValue(string $key): string
+    public function getValue(string $key)
     {
-        return $this->data[$key];
+        return $this->data[$key] ?? null;
     }
 
     public function setValue(string $key, string $value): void
@@ -24,9 +24,24 @@ class Config
      */
     public function readConfigFile(): void
     {
-        $lines = preg_split("/[\r\n]+/", file_get_contents('../../.config'));
+        $configPath = '';
+        $paths = ['./.config', '../.config', '../../.config'];
+        foreach ($paths as $path) {
+            if (file_exists($path)) {
+                $configPath = $path;
+                break;
+            }
+        }
+        if (empty($configPath)) {
+            echo "Could not find .config\n";
+            die;
+        }
+        $lines = preg_split("/[\r\n]+/", file_get_contents($configPath));
         foreach ($lines as $line) {
             if (empty($line)) {
+                continue;
+            }
+            if (substr($line, 0, 1) == '#') {
                 continue;
             }
             $kv = preg_split("/=/", $line);
