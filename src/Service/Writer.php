@@ -9,21 +9,32 @@ class Writer
 
     private $lines = [];
 
+    public const $required
+
     public function __construct(array $options)
     {
         // TODO: pass in as param, is a combination of .config (min recipe) + reader (postgres)
         // may want to do it as $config, $readValues, and merge them in here, or somewhere else
-        $options = [
-            'phpMin' => 5.6,
-            'phpMax' => 7.4,
-            'recipeMinorMin' => 4.3,
-            'recipeMinorMax' => 4.6,
-            'recipeMajor' => 4,
-            'postgres' => true,
-            'behat' => false,
-            'phpcs' => true,
-            'phpCoverage' => true
+        $requiredKeys = [
+            'behat',
+            'coreModule',
+            'npm',
+            'pdo',
+            'phpcs',
+            'phpCoverage',
+            'phpMin',
+            'phpMax',
+            'postgres',
+            'recipeMinorMin',
+            'recipeMinorMax',
+            'recipeMajor'
         ];
+        foreach ($requiredKeys as $key) {
+            if (!isset($options[$key])) {
+                echo "Missing options key $key\n";
+                die;
+            }
+        }
         $this->options = $options;
     }
 
@@ -39,9 +50,14 @@ class Writer
         $this->addAfterSuccess();
     }
 
+    public function getLines(): array
+    {
+        return $this->lines;
+    }
+
     private function addLines($lines): void
     {
-        $this->lines[] = array_merge($this->lines[], $lines);
+        $this->lines = array_merge($this->lines, $lines);
     }
 
     private function addIntro(): void
@@ -109,15 +125,21 @@ matrix:
     private function addMatrix(): void
     {
         $minMatrixLength = 5;
+        $pdoPhp = 7.1;
+        $postgresPhp = 7.2;
         $phpcsI = 0;
         $phpCoverageI = 1;
-        $pdoI = 1; // should not be the same as $postgresI
-        $postgresI = 2;
-        $npmI = 2;
-        $behatI = 3;
-        $isCoreModule = false; // TODO: stuff like silverstirpe/assets needs to be pinned to current minor e.g. 4.6.x-dev
+        $behatI = 2;
+        $npmI = 3;
+
+        if ($pdoPhp == $postgresPhp) {
+            echo '$pdoPhp and $postgresPhp should be different' . "\n";
+            die;
+        }
 
         // TODO: move this stuff to private methods
+
+        // TODO: unit test all this
 
         // php
         $phps = [5.6, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9];
@@ -159,7 +181,7 @@ matrix:
         }
         $myRecipes = [];
 
-        if ($isCoreModule) {
+        if ($this->options['coreModule']) {
             while (count($myRecipes) < $minMatrixLength) {
                 $myRecipes[] = $recipeMinorMax;
             }
@@ -168,7 +190,7 @@ matrix:
                 $myRecipes[] = $recipeMinors[$i];
             }
             while (count($myRecipes) < ($minMatrixLength - 1)) {
-                $myRecipes[] = $phpMax;
+                $myRecipes[] = $recipeMinorMax;
             }
             $myRecipes[] = $recipeMajor;
         }
@@ -178,27 +200,36 @@ matrix:
             'matrix:',
             '  include:',
         ];
+        $lastPhp = '';
+        $lastEnv = '';
         for ($i = 0; $i < count($myRecipes); $i++) {
             // TODO: confirm we can replace any silverstripe/installer with silverstripe/recipe-cms
-            $recipe = (string) $myRecipes[$i] . '.x-dev';
+            $recipe = (string) $myRecipes[$i];
             $php = (string) isset($myPhps[$i]) ? $myPhps[$i] : $phpMax;
             $data = [];
-            $data[] = $this->options['postgres'] && $i == $postgresI ? 'DB=PGSQL' : 'DB=MYSQL';
+            $data[] = $this->options['postgres'] && $php == $postgresPhp ? 'DB=PGSQL' : 'DB=MYSQL';
+            $data[] = "RECIPE_VERSION=$recipe.x-dev";
             $data[] = $this->options['phpCoverage'] && $i == $phpCoverageI ? 'PHPUNIT_COVERAGE_TEST=1' : 'PHPUNIT_TEST=1';
-            if ($i == $phpcsI) {
-                $data[] = 'PHPCS=1';
+            if ($this->options['phpcs'] && $i == $phpcsI) {
+                $data[] = 'PHPCS_TEST=1';
             }
-            if ($i == $pdoI && $i != $postgresI) {
+            if ($this->options['pdo'] && $php == $pdoPhp) {
                 $data[] = 'PDO=1';
             }
-            if ($i == $npmI) {
+            if ($this->options['npm'] && $i == $npmI) {
                 $data[] = 'NPM_TEST=1';
             }
             if ($this->options['behat'] && $i == $behatI) {
                 $data[] = 'BEHAT_TEST=1';
             }
+            $env = implode(' ', $data);
+            if ($php == $lastPhp && strpos($lastEnv, $env) === 0) {
+                break;
+            }
             $lines[] = "    - php: $php";
-            $lines[] = "      env: " . implode(' ', $data);
+            $lines[] = "      env: $env";
+            $lastPhp = $php;
+            $lastEnv = $env;
         }
         $lines[] = '';
         $this->addLines($lines);

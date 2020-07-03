@@ -9,6 +9,7 @@ class Reader
     public const DEFAULT_PHP_MAX = 0;
     public const DEFAULT_RECIPE_MINOR_MIN = 99.9;
     public const DEFAULT_RECIPE_MINOR_MAX = 0;
+    public const DEFAULT_RECIPE_MAJOR = 0;
     public const DEFAULT_COMPOSER_ROOT_VERSION = 99.9; // TODO: need to read from .git somehow
 
     /**
@@ -50,6 +51,7 @@ class Reader
             } elseif (in_array($line, ['before_script:', 'script:'])) {
                 $inMatrix = false;
             }
+            // everything is inside the matrix
             if ($inMatrix) {
                 $this->parsePhpVersions($line);
                 $this->parseRecipeVersions($line);
@@ -58,22 +60,28 @@ class Reader
                 $this->parsePhpCoverage($line);
                 $this->parsePdo($line);
             } else {
-                // not in matrix (nothing?)
+                // nothing is outside the matrix
             }
         }
     }
 
     private function setDefaultDataValues()
     {
-        $this->data['phpMin'] = self::DEFAULT_PHP_MIN;
-        $this->data['phpMax'] = self::DEFAULT_PHP_MAX;
-        $this->data['recipeMinorMin'] = self::DEFAULT_RECIPE_MINOR_MIN;
-        $this->data['recipeMinorMax'] = self::DEFAULT_RECIPE_MINOR_MAX;
-        $this->data['composerRootVersion'] = self::DEFAULT_COMPOSER_ROOT_VERSION;
-        $this->data['postgres'] = false;
-        $this->data['phpcs'] = false;
-        $this->data['phpCoverage'] = false;
-        $this->data['pdo'] = false;
+        $this->data = [
+            'behat' => false,
+            'composerRootVersion' => self::DEFAULT_COMPOSER_ROOT_VERSION,
+            'coreModule' => false,
+            'npm' => false,
+            'pdo' => false,
+            'phpcs' => false,
+            'phpCoverage' => false,
+            'phpMin' => self::DEFAULT_PHP_MIN,
+            'phpMax' => self::DEFAULT_PHP_MAX,
+            'postgres' => false,
+            'recipeMinorMin' => self::DEFAULT_RECIPE_MINOR_MIN,
+            'recipeMinorMax' => self::DEFAULT_RECIPE_MINOR_MAX,
+            'recipeMajor' => self::DEFAULT_RECIPE_MAJOR,
+        ];
     }
 
     private function parsePhpVersions(string $line): void
