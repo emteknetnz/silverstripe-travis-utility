@@ -66,7 +66,7 @@ class WriterTest extends TestCase
             '    - php: 7.2',
             '      env: DB=PGSQL RECIPE_VERSION=4.6.x-dev PHPUNIT_COVERAGE_TEST=1',
             '    - php: 7.3',
-            '      env: DB=MYSQL RECIPE_VERSION=4.6.x-dev PHPUNIT_TEST=1 BEHAT_TEST=1',
+            '      env: DB=MYSQL RECIPE_VERSION=4.6.x-dev PHPUNIT_TEST=1 BEHAT_TEST=@module # <-- replace this with module name e.g. @asset-admin',
             '    - php: 7.4',
             '      env: DB=MYSQL RECIPE_VERSION=4.6.x-dev PHPUNIT_TEST=1 NPM_TEST=1',
             ''

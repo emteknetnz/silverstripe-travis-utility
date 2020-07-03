@@ -38,10 +38,15 @@ class Reader
         return $this->data[$key] ?? null;
     }
 
-    public function read(string $filename): void
+    public function read(string $subPath): void
     {
+        $this->data['coreModule'] = $this->config->isCoreModule($subPath);
+        // TODO: consider getting rid of config dir, as likely will globally run this program
+        // within the directory that you want to update
         $dir = rtrim($this->config->getValue('dir'), '/');
-        $contents = file_get_contents("$dir/$filename");
+        $path = preg_replace('@/\.travis\.yml$@', '', "$dir/$subPath");
+        $ymlPath = preg_match('@\.yml$@', $path) ? $path : "$path/.travis.yml";
+        $contents = file_get_contents($ymlPath);
         $lines = preg_split("/[\r\n]+/", $contents);
         $inMatrix = false;
         foreach ($lines as $line) {
@@ -54,6 +59,7 @@ class Reader
             // everything is inside the matrix
             if ($inMatrix) {
                 $this->parseBehat($line);
+                $this->parseNpm($line);
                 $this->parsePdo($line);
                 $this->parsePhpVersions($line);
                 $this->parsePhpcs($line);
@@ -73,10 +79,18 @@ class Reader
 
     private function parseBehat(string $line): void
     {
-        if (!preg_match('/BEHAT_TEST=1/', $line)) {
+        if (!preg_match('/BEHAT_TEST=[1|@]/', $line)) {
             return;
         }
         $this->data['behat'] = true;
+    }
+
+    private function parseNpm(string $line): void
+    {
+        if (!preg_match('/NPM_TEST=1/', $line)) {
+            return;
+        }
+        $this->data['npm'] = true;
     }
 
     private function parsePdo(string $line): void

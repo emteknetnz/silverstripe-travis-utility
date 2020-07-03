@@ -42,6 +42,23 @@ class ReaderTest extends TestCase
         ]);
     }
 
+    public function testC(): void
+    {
+        $this->readerTest('c.yml', [
+            'behat' => true,
+            'npm' => true,
+            'pdo' => false,
+            'phpcs' => true,
+            'phpMin' => 7.1,
+            'phpMax' => 7.4,
+            'phpCoverage' => false,
+            'postgres' => true,
+            'recipeMajor' => READER::DEFAULT_RECIPE_MAJOR,
+            'recipeMinorMin' => READER::DEFAULT_RECIPE_MINOR_MIN,
+            'recipeMinorMax' => READER::DEFAULT_RECIPE_MINOR_MAX
+        ]);
+    }
+
     private function readerTest(string $filename, array $expecteds): void
     {
         $config = new Config();

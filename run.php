@@ -11,7 +11,11 @@ $config->readConfigFile();
 
 $reader = new Reader();
 $reader->setConfig($config);
-$reader->read('silverstripe-auditor/.travis.yml'); // TODO: pass in value via CLI
+
+// TODO: pass in value via CLI
+$subDirectory = 'silverstripe-asset-admin';
+
+$reader->read($subDirectory);
 
 // read options from reader, overwrite them with anything in .config (with some exceptions)
 $options = [];

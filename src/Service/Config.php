@@ -7,7 +7,40 @@ namespace Emteknetnz\TravisUtility\Service;
  */
 class Config
 {
+
+    /*
+     * https://github.com/silverstripeltd/github-issue-search-client/blob/master/src/repos.json
+     */
+    private const CORE_MODULES_DIRECTORIES = [
+        "silverstripe-admin",
+        "silverstripe-asset-admin",
+        "silverstripe-assets",
+        "silverstripe-campaign-admin",
+        "silverstripe-cms",
+        "silverstripe-config",
+        "silverstripe-errorpage",
+        "silverstripe-framework",
+        "silverstripe-graphql",
+        "silverstripe-installer",
+        "recipe-cms",
+        "recipe-core",
+        "recipe-plugin",
+        "silverstripe-reports",
+        "silverstripe-siteconfig",
+        "silverstripe-versioned",
+        "silverstripe-versioned-admin",
+        "silverstripe-simple",
+        // newly added:
+        "silverstripe-login-forms"
+    ];
+
     private $data = [];
+
+    public function isCoreModule(string $subPath): bool
+    {
+        $subdir = preg_replace('@.+/(.+?)$@', '$1', $subPath);
+        return in_array($subdir, self::CORE_MODULES_DIRECTORIES);
+    }
 
     public function getValue(string $key)
     {
