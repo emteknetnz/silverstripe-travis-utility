@@ -5,10 +5,6 @@ namespace Emteknetnz\TravisUtility\Service;
 class Writer
 {
 
-    private $options = [];
-
-    private $lines = [];
-
     public const OPTION_KEYS = [
         'behat',
         'coreModule',
@@ -24,6 +20,10 @@ class Writer
         'recipeMajor'
     ];
 
+    private $options = [];
+
+    private $lines = [];
+
     public function __construct(array $options)
     {
         // TODO: pass in as param, is a combination of .config (min recipe) + reader (postgres)
@@ -36,6 +36,11 @@ class Writer
             }
         }
         $this->options = $options;
+    }
+
+    public function getLines(): array
+    {
+        return $this->lines;
     }
 
     public function write(): void
@@ -53,37 +58,39 @@ class Writer
         file_put_contents('output.txt', implode("\n", $this->lines));
     }
 
-    public function getLines(): array
-    {
-        return $this->lines;
-    }
-
-    private function addLines($lines): void
-    {
-        $this->lines = array_merge($this->lines, $lines);
-    }
-
-    private function addIntro(): void
+    private function addAfterSuccess(): void
     {
         $lines = [
-            'language: php',
-            '',
-            'dist: xenial',
-            '',
+            'after_success:'
         ];
-        $this->addLines($lines);
+        if ($this->options['phpCoverage']) {
+            $lines[] = '  - if [[ $PHPUNIT_COVERAGE_TEST ]]; then bash <(curl -s https://codecov.io/bash) -f coverage.xml; fi';
+        }
+        if (count($lines) > 1) {
+            $this->addLines($lines);
+        }
     }
 
-    private function addServices(): void
+    private function addBeforeScript(): void
     {
+        // composer require/install/update cli options:
+        // https://getcomposer.org/doc/03-cli.md
         $lines = [
-            'services:',
-            '  - mysql',
+            'before_script:',
+            '  - phpenv rehash',
+            "  - phpenv config-rm xdebug.ini",
+            '',
+            '  - composer validate',
+            // TODO: other requirements are needed sometimes
+            // TODO: consider including everything together on a single line
+            '  - composer require --no-update silverstripe/recipe-cms:$RECIPE_VERSION',
+            '  # Fix for running phpunit 5 on php 7.4+',
+            '  - composer require --no-update sminnee/phpunit-mock-objects:^3',
         ];
         if ($this->options['postgres']) {
-            $lines[] = '  - postgresql';
+            $lines[] = '- if [[ $DB == PGSQL ]]; then composer require --no-update silverstripe/postgresql:^2; fi';
         }
-        // TODO: xvfb for behat
+        $lines[] = '  - composer install --prefer-dist --no-interaction --no-progress --no-suggest --optimize-autoloader --verbose --profile';
         $lines[] = '';
         $this->addLines($lines);
     }
@@ -109,6 +116,22 @@ class Writer
             '',
         ];
         $this->addLines($lines);
+    }
+
+    private function addIntro(): void
+    {
+        $lines = [
+            'language: php',
+            '',
+            'dist: xenial',
+            '',
+        ];
+        $this->addLines($lines);
+    }
+
+    private function addLines($lines): void
+    {
+        $this->lines = array_merge($this->lines, $lines);
     }
 
     private function addMatrix(): void
@@ -192,8 +215,8 @@ class Writer
         $lastEnv = '';
         for ($i = 0; $i < count($myRecipes); $i++) {
             // TODO: confirm we can replace any silverstripe/installer with silverstripe/recipe-cms
-            $recipe = (string) $myRecipes[$i];
-            $php = (string) isset($myPhps[$i]) ? $myPhps[$i] : $phpMax;
+            $recipe = (string)$myRecipes[$i];
+            $php = (string)isset($myPhps[$i]) ? $myPhps[$i] : $phpMax;
             $data = [];
             $data[] = $this->options['postgres'] && $php == $postgresPhp ? 'DB=PGSQL' : 'DB=MYSQL';
             $data[] = "RECIPE_VERSION=$recipe.x-dev";
@@ -223,30 +246,6 @@ class Writer
         $this->addLines($lines);
     }
 
-    private function addBeforeScript(): void
-    {
-        // composer require/install/update cli options:
-        // https://getcomposer.org/doc/03-cli.md
-        $lines = [
-            'before_script:',
-            '  - phpenv rehash',
-            "  - phpenv config-rm xdebug.ini",
-            '',
-            '  - composer validate',
-            // TODO: other requirements are needed sometimes
-            // TODO: consider including everything together on a single line
-            '  - composer require --no-update silverstripe/recipe-cms:$RECIPE_VERSION',
-            '  # Fix for running phpunit 5 on php 7.4+',
-            '  - composer require --no-update sminnee/phpunit-mock-objects:^3',
-        ];
-        if ($this->options['postgres']) {
-            $lines[] = '- if [[ $DB == PGSQL ]]; then composer require --no-update silverstripe/postgresql:^2; fi';
-        }
-        $lines[] = '  - composer install --prefer-dist --no-interaction --no-progress --no-suggest --optimize-autoloader --verbose --profile';
-        $lines[] = '';
-        $this->addLines($lines);
-    }
-
     private function addScript(): void
     {
         // TODO: BEHAT_TEST
@@ -262,16 +261,19 @@ class Writer
         $this->addLines($lines);
     }
 
-    private function addAfterSuccess(): void
+    private function addServices(): void
     {
         $lines = [
-            'after_success:'
+            'services:',
+            '  - mysql',
         ];
-        if ($this->options['phpCoverage']) {
-            $lines[] = '  - if [[ $PHPUNIT_COVERAGE_TEST ]]; then bash <(curl -s https://codecov.io/bash) -f coverage.xml; fi';
+        if ($this->options['postgres']) {
+            $lines[] = '  - postgresql';
         }
-        if (count($lines) > 1) {
-            $this->addLines($lines);
+        if ($this->options['behat']) {
+            $lines[] = '  - xvfb';
         }
+        $lines[] = '';
+        $this->addLines($lines);
     }
 }

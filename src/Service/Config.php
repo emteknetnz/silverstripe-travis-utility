@@ -14,11 +14,6 @@ class Config
         return $this->data[$key] ?? null;
     }
 
-    public function setValue(string $key, string $value): void
-    {
-        $this->data[$key] = $value;
-    }
-
     /**
      * Read a .config file
      */
@@ -49,5 +44,10 @@ class Config
             $value = $kv[1];
             $this->data[$key] = $value;
         }
+    }
+
+    public function setValue(string $key, string $value): void
+    {
+        $this->data[$key] = $value;
     }
 }

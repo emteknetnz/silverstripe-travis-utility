@@ -10,22 +10,48 @@ class ReaderTest extends TestCase
 {
     public function testA(): void
     {
+        $this->readerTest('a.yml', [
+            'behat' => false,
+            'npm' => false,
+            'pdo' => true,
+            'phpcs' => true,
+            'phpMin' => 5.6,
+            'phpMax' => 7.4,
+            'phpCoverage' => true,
+            'postgres' => true,
+            'recipeMajor' => 4,
+            'recipeMinorMin' => 4.4,
+            'recipeMinorMax' => 4.6
+        ]);
+    }
+
+    public function testB(): void
+    {
+        $this->readerTest('b.yml', [
+            'behat' => true,
+            'npm' => false,
+            'pdo' => false,
+            'phpcs' => true,
+            'phpMin' => 5.6,
+            'phpMax' => 7.3,
+            'phpCoverage' => false,
+            'postgres' => true,
+            'recipeMajor' => READER::DEFAULT_RECIPE_MAJOR,
+            'recipeMinorMin' => 4.4,
+            'recipeMinorMax' => 4.4
+        ]);
+    }
+
+    private function readerTest(string $filename, array $expecteds): void
+    {
         $config = new Config();
         $config->setValue('dir', __DIR__ . '/fixtures/ReaderTest');
         $reader = new Reader();
         $reader->setConfig($config);
-        $reader->read('a.yml');
-        $this->assertEquals(false, $reader->getValue('behat'));
-        $this->assertEquals(false, $reader->getValue('npm'));
-        $this->assertEquals(true, $reader->getValue('pdo'));
-        $this->assertEquals(true, $reader->getValue('phpcs'));
-        $this->assertEquals(5.6, $reader->getValue('phpMin'));
-        $this->assertEquals(7.4, $reader->getValue('phpMax'));
-        $this->assertEquals(true, $reader->getValue('phpCoverage'));
-        $this->assertEquals(true, $reader->getValue('postgres'));
-        $this->assertEquals(4, $reader->getValue('recipeMajor'));
-        $this->assertEquals(4.4, $reader->getValue('recipeMinorMin'));
-        $this->assertEquals(4.6, $reader->getValue('recipeMinorMax'));
+        $reader->read($filename);
+        foreach ($expecteds as $key => $expected) {
+            $actual = $reader->getValue($key);
+            $this->assertEquals($expected, $actual, $key);
+        }
     }
-    // TODO testB
 }
