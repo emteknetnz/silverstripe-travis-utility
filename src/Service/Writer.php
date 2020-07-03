@@ -15,6 +15,7 @@ class Writer
         // may want to do it as $config, $readValues, and merge them in here, or somewhere else
         $options = [
             'phpMin' => 5.6,
+            'phpMax' => 7.4,
             'recipeMinorMin' => 4.3,
             'recipeMinorMax' => 4.6,
             'recipeMajor' => 4,
@@ -90,9 +91,117 @@ class Writer
         $this->addLines($lines);
     }
 
+    /*
+matrix:
+  include:
+    - php: 5.6
+      env: DB=MYSQL RECIPE_VERSION=4.4.x-dev PHPUNIT_TEST=1 PHPCS_TEST=1
+    - php: 7.1
+      env: DB=MYSQL RECIPE_VERSION=4.5.x-dev PHPUNIT_COVERAGE_TEST=1 PDO=1
+    - php: 7.2
+      env: DB=PGSQL RECIPE_VERSION=4.6.x-dev PHPUNIT_TEST=1
+    - php: 7.3
+      env: DB=MYSQL RECIPE_VERSION=4.6.x-dev PHPUNIT_TEST=1
+    - php: 7.4
+      env: DB=MYSQL RECIPE_VERSION=4.x-dev PHPUNIT_TEST=1
+     */
+
     private function addMatrix(): void
     {
-        // TODO =]
+        $minMatrixLength = 5;
+        $phpcsI = 0;
+        $phpCoverageI = 1;
+        $pdoI = 1; // should not be the same as $postgresI
+        $postgresI = 2;
+        $npmI = 2;
+        $behatI = 3;
+        $isCoreModule = false; // TODO: stuff like silverstirpe/assets needs to be pinned to current minor e.g. 4.6.x-dev
+
+        // TODO: move this stuff to private methods
+
+        // php
+        $phps = [5.6, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9];
+        $phpMin = $this->options['phpMin'];
+        $phpMax = $this->options['phpMax'];
+        $phpMinI = array_search($phpMin, $phps);
+        if ($phpMinI === false || $phpMinI === null) {
+            echo "Invalid phpMin";
+            die;
+        }
+        $phpMaxI = array_search($phpMax, $phps);
+        if ($phpMinI === false || $phpMinI === null) {
+            echo "Invalid phpMax";
+            die;
+        }
+        $myPhps = [];
+        for ($i = $phpMinI; $i <= $phpMaxI; $i++) {
+            $myPhps[] = $phps[$i];
+        }
+        while (count($myPhps) < $minMatrixLength) {
+            $myPhps[] = $phpMax;
+        }
+
+        // recipe
+        $recipeMinors = [4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9];
+        $recipeMinorMin = $this->options['recipeMinorMin'];
+        $recipeMinorMax = $this->options['recipeMinorMax'];
+        $recipeMajor = $this->options['recipeMajor'];
+
+        $recipeMinorMinI = array_search($recipeMinorMin, $recipeMinors);
+        if ($recipeMinorMinI === false || $recipeMinorMinI === null) {
+            echo "Invalid recipeMinorMin";
+            die;
+        }
+        $recipeMinorMaxI = array_search($recipeMinorMax, $recipeMinors);
+        if ($recipeMinorMaxI === false || $recipeMinorMaxI === null) {
+            echo "Invalid recipeMinorMax";
+            die;
+        }
+        $myRecipes = [];
+
+        if ($isCoreModule) {
+            while (count($myRecipes) < $minMatrixLength) {
+                $myRecipes[] = $recipeMinorMax;
+            }
+        } else {
+            for ($i = $recipeMinorMinI; $i <= $recipeMinorMaxI; $i++) {
+                $myRecipes[] = $recipeMinors[$i];
+            }
+            while (count($myRecipes) < ($minMatrixLength - 1)) {
+                $myRecipes[] = $phpMax;
+            }
+            $myRecipes[] = $recipeMajor;
+        }
+
+        // lines
+        $lines = [
+            'matrix:',
+            '  include:',
+        ];
+        for ($i = 0; $i < count($myRecipes); $i++) {
+            // TODO: confirm we can replace any silverstripe/installer with silverstripe/recipe-cms
+            $recipe = (string) $myRecipes[$i] . '.x-dev';
+            $php = (string) isset($myPhps[$i]) ? $myPhps[$i] : $phpMax;
+            $data = [];
+            $data[] = $this->options['postgres'] && $i == $postgresI ? 'DB=PGSQL' : 'DB=MYSQL';
+            $data[] = $this->options['phpCoverage'] && $i == $phpCoverageI ? 'PHPUNIT_COVERAGE_TEST=1' : 'PHPUNIT_TEST=1';
+            if ($i == $phpcsI) {
+                $data[] = 'PHPCS=1';
+            }
+            if ($i == $pdoI && $i != $postgresI) {
+                $data[] = 'PDO=1';
+            }
+            if ($i == $npmI) {
+                $data[] = 'NPM_TEST=1';
+            }
+            if ($this->options['behat'] && $i == $behatI) {
+                $data[] = 'BEHAT_TEST=1';
+            }
+            $lines[] = "    - php: $php";
+            $lines[] = "      env: " . implode(' ', $data);
+        }
+        $lines[] = '';
+        $this->addLines($lines);
     }
 
     private function addBeforeScript(): void
