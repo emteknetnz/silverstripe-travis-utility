@@ -15,7 +15,7 @@ class Reader
 
     public const DEFAULT_RECIPE_MINOR_MAX = 0;
 
-    public const DEFAULT_RECIPE_MINOR_MIN = 99.9; // TODO: need to read from .git somehow
+    public const DEFAULT_RECIPE_MINOR_MIN = 99.9;
 
     /**
      * @var Config
@@ -24,8 +24,10 @@ class Reader
 
     private $data = [];
 
-    public function __construct()
+    // TODO: make $config non-optional (update unit-tests?)
+    public function __construct(Config $config = null)
     {
+        $this->config = $config;
         $this->setDefaultDataValues();
     }
 
@@ -70,11 +72,6 @@ class Reader
                 // nothing is outside the matrix
             }
         }
-    }
-
-    public function setConfig(Config $config): void
-    {
-        $this->config = $config;
     }
 
     private function parseBehat(string $line): void

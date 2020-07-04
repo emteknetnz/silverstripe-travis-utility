@@ -9,11 +9,12 @@ require_once __DIR__ . '/vendor/autoload.php';
 $config = new Config();
 $config->readConfigFile();
 
-$reader = new Reader();
-$reader->setConfig($config);
+$reader = new Reader($config);
 
 // TODO: pass in value via CLI
 $subDirectory = 'silverstripe-asset-admin';
+
+// TODO: read .git branch from current dir, pass in to reader/writer to set DEFAULT_RECIPE_MINOR_MIN
 
 $reader->read($subDirectory);
 
@@ -42,5 +43,5 @@ foreach (Writer::OPTION_KEYS as $key) {
 // TODO: read from git somehow
 $options['composerRootVersion'] = 2.6;
 
-$writer = new Writer($options);
+$writer = new Writer($options, $config);
 $writer->write();

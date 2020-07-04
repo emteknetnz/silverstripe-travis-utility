@@ -17,17 +17,43 @@ class Writer
         'postgres',
         'recipeMinorMin',
         'recipeMinorMax',
-        'recipeMajor'
+        'recipeMajor',
+        'subDirectory'
     ];
 
     // TODO: list of @asset-admin like behat tests based on subdir e.g. silverstripe-asset-admin
     // possibly should live in a different class
 
+    private const MODULE_BEHATS = [
+        'silverstripe-admin' => ['@admin', '@cms'],
+        'silverstripe-asset-admin' => ['@asset-admin'],
+        'silverstripe-campaign-admin' => ['@campaign-admin'],
+        'silverstripe-ckan-registry' => ['@ckan-registry'],
+        'silverstripe-cms' => ['@cms'],
+        'silverstripe-contentreview' => ['@contentreview'],
+        'silverstripe-elemental-bannerblock' => ['@elemental-bannerblock'],
+        'silverstripe-elemental' => ['@silverstripe-elemental'],
+        'silverstripe-graphql' => ['@asset-admin'],
+        'silverstripe-installer' => ['@framework', '@cms', '@asset-admin'],
+        'silverstripe-mfa' => ['@mfa'],
+        'silverstripe-security-extensions' => ['@security-extensions'],
+        'silverstripe-sharedraftcontent' => ['@sharedraftcontent'],
+        'silverstripe-siteconfig' => ['@siteconfig'],
+        'silverstripe-subsites' => ['@subsites'],
+        'silverstripe-versioned-admin' => ['@versioned-admin'],
+    ];
+
+    /**
+     * @var Config
+     */
+    private $config = null;
+
     private $options = [];
 
     private $lines = [];
 
-    public function __construct(array $options)
+    // TODO: make $config non-optional (update unit-tests?)
+    public function __construct(array $options, Config $config = null)
     {
         foreach (self::OPTION_KEYS as $key) {
             if (!isset($options[$key])) {
@@ -36,6 +62,7 @@ class Writer
             }
         }
         $this->options = $options;
+        $this->config = $config;
     }
 
     public function getLines(): array
@@ -128,7 +155,6 @@ class Writer
         $lines[] = '  # sminnee/phpunit-mock-objects is a fix for running phpunit 5 on php 7.4+';
         $lines[] = '  - composer validate';
         // TODO: other composer requirements are needed sometimes - will using recipe always be enough?
-        // TODO: refactor consider including everything together on a single line
         $requirements = [
             'silverstripe/recipe-cms:$RECIPE_VERSION',
             'sminnee/phpunit-mock-objects:^3'
@@ -214,75 +240,31 @@ class Writer
 
     private function addMatrix(): void
     {
-        // TODO: refactor move these to private const for better visibility?
+        // essentially controls "how many recipe versions back" we go
         $minMatrixLength = 5;
+
+        // version of php these option will appear on
         $pdoPhp = 7.1;
         $postgresPhp = 7.2;
+
+        // matrix $i these options will appear on
         $phpcsI = 0;
         $phpCoverageI = 1;
         $behatI = 2;
         $npmI = 3;
+
+        // additional behats
+        $behat2I = 1;
+        $behat3I = 0;
 
         if ($pdoPhp == $postgresPhp) {
             echo '$pdoPhp and $postgresPhp should be different' . "\n";
             die;
         }
 
-        // TODO: refactor move this stuff to private methods
-
-        // php
-        $phps = [5.6, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9];
-        $phpMin = $this->options['phpMin'];
-        $phpMax = $this->options['phpMax'];
-        $phpMinI = array_search($phpMin, $phps);
-        if ($phpMinI === false || $phpMinI === null) {
-            echo "Invalid phpMin";
-            die;
-        }
-        $phpMaxI = array_search($phpMax, $phps);
-        if ($phpMinI === false || $phpMinI === null) {
-            echo "Invalid phpMax";
-            die;
-        }
-        $myPhps = [];
-        for ($i = $phpMinI; $i <= $phpMaxI; $i++) {
-            $myPhps[] = $phps[$i];
-        }
-        while (count($myPhps) < $minMatrixLength) {
-            $myPhps[] = $phpMax;
-        }
-
-        // recipe
-        $recipeMinors = [4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9];
-        $recipeMinorMin = $this->options['recipeMinorMin'];
-        $recipeMinorMax = $this->options['recipeMinorMax'];
-        $recipeMajor = $this->options['recipeMajor'];
-
-        $recipeMinorMinI = array_search($recipeMinorMin, $recipeMinors);
-        if ($recipeMinorMinI === false || $recipeMinorMinI === null) {
-            echo "Invalid recipeMinorMin";
-            die;
-        }
-        $recipeMinorMaxI = array_search($recipeMinorMax, $recipeMinors);
-        if ($recipeMinorMaxI === false || $recipeMinorMaxI === null) {
-            echo "Invalid recipeMinorMax";
-            die;
-        }
-        $myRecipes = [];
-
-        if ($this->options['coreModule']) {
-            while (count($myRecipes) < $minMatrixLength) {
-                $myRecipes[] = $recipeMinorMax;
-            }
-        } else {
-            for ($i = $recipeMinorMinI; $i <= $recipeMinorMaxI; $i++) {
-                $myRecipes[] = $recipeMinors[$i];
-            }
-            while (count($myRecipes) < ($minMatrixLength - 1)) {
-                $myRecipes[] = $recipeMinorMax;
-            }
-            $myRecipes[] = $recipeMajor;
-        }
+        $myPhps = $this->buildMyPhps($minMatrixLength);
+        $myRecipes = $this->buildMyRecipes($minMatrixLength);
+        $behats = self::MODULE_BEHATS[$this->options['subDirectory']] ?? [];
 
         // lines
         $lines = [
@@ -291,10 +273,11 @@ class Writer
         ];
         $lastPhp = '';
         $lastEnv = '';
+        $behatN = 0;
         for ($i = 0; $i < count($myRecipes); $i++) {
             // TODO: confirm we can replace any silverstripe/installer with silverstripe/recipe-cms
             $recipe = (string)$myRecipes[$i];
-            $php = (string)isset($myPhps[$i]) ? $myPhps[$i] : $phpMax;
+            $php = (string)isset($myPhps[$i]) ? $myPhps[$i] : $this->options['phpMax'];
             $data = [];
             $data[] = $this->options['postgres'] && $php == $postgresPhp ? 'DB=PGSQL' : 'DB=MYSQL';
             $data[] = "RECIPE_VERSION=$recipe.x-dev";
@@ -308,8 +291,14 @@ class Writer
             if ($this->options['npm'] && $i == $npmI) {
                 $data[] = 'NPM_TEST=1';
             }
-            if ($this->options['behat'] && $i == $behatI) {
-                $data[] = 'BEHAT_TEST=@module # <-- replace this with module name e.g. @asset-admin';
+            if ($this->options['behat'] &&
+                $i == $behatI ||
+                $i == $behat2I && count($behats) > 1 ||
+                $i == $behat3I && count($behats) > 2
+            ) {
+                $behat = $behats[$behatN];
+                $data[] = "BEHAT_TEST=$behat";
+                $behatN++;
             }
             $env = implode(' ', $data);
             // don't add any more entires to matrix, even if below minimum matrix size, if all
@@ -366,5 +355,64 @@ class Writer
         }
         $lines[] = '';
         $this->addLines($lines);
+    }
+
+    private function buildMyPhps(int $minMatrixLength): array
+    {
+        $phps = [5.6, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9];
+        $phpMin = $this->options['phpMin'];
+        $phpMax = $this->options['phpMax'];
+        $phpMinI = array_search($phpMin, $phps);
+        if ($phpMinI === false || $phpMinI === null) {
+            echo "Invalid phpMin";
+            die;
+        }
+        $phpMaxI = array_search($phpMax, $phps);
+        if ($phpMinI === false || $phpMinI === null) {
+            echo "Invalid phpMax";
+            die;
+        }
+        $myPhps = [];
+        for ($i = $phpMinI; $i <= $phpMaxI; $i++) {
+            $myPhps[] = $phps[$i];
+        }
+        while (count($myPhps) < $minMatrixLength) {
+            $myPhps[] = $phpMax;
+        }
+        return $myPhps;
+    }
+
+    private function buildMyRecipes(int $minMatrixLength): array
+    {
+        $recipeMinors = [4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9];
+        $recipeMinorMin = $this->options['recipeMinorMin'];
+        $recipeMinorMax = $this->options['recipeMinorMax'];
+        $recipeMajor = $this->options['recipeMajor'];
+
+        $recipeMinorMinI = array_search($recipeMinorMin, $recipeMinors);
+        if ($recipeMinorMinI === false || $recipeMinorMinI === null) {
+            echo "Invalid recipeMinorMin";
+            die;
+        }
+        $recipeMinorMaxI = array_search($recipeMinorMax, $recipeMinors);
+        if ($recipeMinorMaxI === false || $recipeMinorMaxI === null) {
+            echo "Invalid recipeMinorMax";
+            die;
+        }
+        $myRecipes = [];
+        if ($this->options['coreModule']) {
+            while (count($myRecipes) < $minMatrixLength) {
+                $myRecipes[] = $recipeMinorMax;
+            }
+        } else {
+            for ($i = $recipeMinorMinI; $i <= $recipeMinorMaxI; $i++) {
+                $myRecipes[] = $recipeMinors[$i];
+            }
+            while (count($myRecipes) < ($minMatrixLength - 1)) {
+                $myRecipes[] = $recipeMinorMax;
+            }
+            $myRecipes[] = $recipeMajor;
+        }
+        return $myRecipes;
     }
 }

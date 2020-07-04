@@ -63,8 +63,7 @@ class ReaderTest extends TestCase
     {
         $config = new Config();
         $config->setValue('dir', __DIR__ . '/fixtures/ReaderTest');
-        $reader = new Reader();
-        $reader->setConfig($config);
+        $reader = new Reader($config);
         $reader->read($filename);
         foreach ($expecteds as $key => $expected) {
             $actual = $reader->getValue($key);
