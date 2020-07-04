@@ -7,6 +7,8 @@ class Reader
 
     public const DEFAULT_COMPOSER_ROOT_VERSION = 99.9;
 
+    public const DEFAULT_MEMORY_LIMIT = 2;
+
     public const DEFAULT_PHP_MAX = 0;
 
     public const DEFAULT_PHP_MIN = 99.9;
@@ -24,7 +26,6 @@ class Reader
 
     private $data = [];
 
-    // TODO: $config - make $config non-optional (update unit-tests?)
     public function __construct(Config $config = null)
     {
         $this->config = $config;
@@ -43,8 +44,6 @@ class Reader
     public function read(string $subPath): void
     {
         $this->data['coreModule'] = $this->config->isCoreModule($subPath);
-        // TODO: $config - consider getting rid of config dir, as likely will globally run this program
-        // within the directory that you want to update
         $dir = rtrim($this->config->getValue('dir'), '/');
         $path = preg_replace('@/\.travis\.yml$@', '', "$dir/$subPath");
         $ymlPath = preg_match('@\.yml$@', $path) ? $path : "$path/.travis.yml";
@@ -69,7 +68,7 @@ class Reader
                 $this->parsePostgres($line);
                 $this->parseRecipeVersions($line);
             } else {
-                // nothing is outside the matrix
+                $this->parseMemoryLimit($line);
             }
         }
     }
@@ -80,6 +79,18 @@ class Reader
             return;
         }
         $this->data['behat'] = true;
+    }
+
+    private function parseMemoryLimit(string $line): void
+    {
+        if (!preg_match('/memory_limit=([0-9]+)([MG])/', $line, $m)) {
+            return;
+        }
+        $memoryLimit = $m[1];
+        if ($m[2] == 'M') {
+            $memoryLimit = ceil($memoryLimit / 1024);
+        }
+        $this->data['memoryLimit'] = $memoryLimit;
     }
 
     private function parseNpm(string $line): void
@@ -158,6 +169,7 @@ class Reader
             'behat' => false,
             'composerRootVersion' => self::DEFAULT_COMPOSER_ROOT_VERSION,
             'coreModule' => false,
+            'memoryLimit' => self::DEFAULT_MEMORY_LIMIT,
             'npm' => false,
             'pdo' => false,
             'phpcs' => false,

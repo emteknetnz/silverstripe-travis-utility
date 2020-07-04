@@ -13,6 +13,7 @@ class WriterTest extends TestCase
         $options = [
             'behat' => true,
             'coreModule' => false,
+            'memoryLimit' => 2,
             'npm' => false,
             'pdo' => true,
             'phpcs' => true,
@@ -23,21 +24,21 @@ class WriterTest extends TestCase
             'recipeMajor' => 4,
             'recipeMinorMin' => 4.4,
             'recipeMinorMax' => 4.6,
-            'subDirectory' => 'silverstripe-asset-admin'
+            'subPath' => 'silverstripe-asset-admin'
         ];
         $expected = [
             'matrix:',
             '  include:',
             '    - php: 5.6',
-            '      env: DB=MYSQL RECIPE_VERSION=4.4.x-dev PHPUNIT_TEST=1 PHPCS_TEST=1',
+            '      env: DB=MYSQL INSTALLER_VERSION=4.4.x-dev PHPUNIT_TEST=1 PHPCS_TEST=1',
             '    - php: 7.1',
-            '      env: DB=MYSQL RECIPE_VERSION=4.5.x-dev PHPUNIT_COVERAGE_TEST=1 PDO=1',
+            '      env: DB=MYSQL INSTALLER_VERSION=4.5.x-dev PHPUNIT_COVERAGE_TEST=1 PDO=1',
             '    - php: 7.2',
-            '      env: DB=PGSQL RECIPE_VERSION=4.6.x-dev PHPUNIT_TEST=1 BEHAT_TEST=@asset-admin',
+            '      env: DB=PGSQL INSTALLER_VERSION=4.6.x-dev PHPUNIT_TEST=1 BEHAT_TEST=@asset-admin',
             '    - php: 7.3',
-            '      env: DB=MYSQL RECIPE_VERSION=4.6.x-dev PHPUNIT_TEST=1',
+            '      env: DB=MYSQL INSTALLER_VERSION=4.6.x-dev PHPUNIT_TEST=1',
             '    - php: 7.4',
-            '      env: DB=MYSQL RECIPE_VERSION=4.x-dev PHPUNIT_TEST=1',
+            '      env: DB=MYSQL INSTALLER_VERSION=4.x-dev PHPUNIT_TEST=1',
             ''
         ];
         $this->lineTest($options, $expected);
@@ -48,6 +49,7 @@ class WriterTest extends TestCase
         $options = [
             'behat' => true,
             'coreModule' => true,
+            'memoryLimit' => 2,
             'npm' => true,
             'pdo' => true,
             'phpcs' => true,
@@ -58,19 +60,19 @@ class WriterTest extends TestCase
             'recipeMinorMin' => 4.4,
             'recipeMinorMax' => 4.6,
             'recipeMajor' => 4,
-            'subDirectory' => 'silverstripe-installer'
+            'subPath' => 'silverstripe-installer'
         ];
         $expected = [
             'matrix:',
             '  include:',
             '    - php: 7.1',
-            '      env: DB=MYSQL RECIPE_VERSION=4.6.x-dev PHPUNIT_TEST=1 PHPCS_TEST=1 PDO=1 BEHAT_TEST=@framework',
+            '      env: DB=MYSQL INSTALLER_VERSION=4.6.x-dev PHPUNIT_TEST=1 PHPCS_TEST=1 PDO=1 BEHAT_TEST=@framework',
             '    - php: 7.2',
-            '      env: DB=PGSQL RECIPE_VERSION=4.6.x-dev PHPUNIT_COVERAGE_TEST=1 BEHAT_TEST=@cms',
+            '      env: DB=PGSQL INSTALLER_VERSION=4.6.x-dev PHPUNIT_COVERAGE_TEST=1 BEHAT_TEST=@cms',
             '    - php: 7.3',
-            '      env: DB=MYSQL RECIPE_VERSION=4.6.x-dev PHPUNIT_TEST=1 BEHAT_TEST=@asset-admin',
+            '      env: DB=MYSQL INSTALLER_VERSION=4.6.x-dev PHPUNIT_TEST=1 BEHAT_TEST=@asset-admin',
             '    - php: 7.4',
-            '      env: DB=MYSQL RECIPE_VERSION=4.6.x-dev PHPUNIT_TEST=1 NPM_TEST=1',
+            '      env: DB=MYSQL INSTALLER_VERSION=4.6.x-dev PHPUNIT_TEST=1 NPM_TEST=1',
             ''
         ];
         $this->lineTest($options, $expected);

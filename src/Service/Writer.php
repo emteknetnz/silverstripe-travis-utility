@@ -8,6 +8,7 @@ class Writer
     public const OPTION_KEYS = [
         'behat',
         'coreModule',
+        'memoryLimit',
         'npm',
         'pdo',
         'phpcs',
@@ -18,7 +19,7 @@ class Writer
         'recipeMinorMin',
         'recipeMinorMax',
         'recipeMajor',
-        'subDirectory'
+        'subPath'
     ];
 
     private const MODULE_BEHATS = [
@@ -49,10 +50,7 @@ class Writer
 
     private $lines = [];
 
-    // TODO: $config - consider making $config non-optional (update unit-tests?)
-    // though optional is still kind of good for running scan.php
-    // possibly just don't include it if running inside of a dir such as silverstripe-asset-admin
-    public function __construct(array $options, Config $config = null)
+    public function __construct(array $options)
     {
         foreach (self::OPTION_KEYS as $key) {
             if (!isset($options[$key])) {
@@ -61,7 +59,6 @@ class Writer
             }
         }
         $this->options = $options;
-        $this->config = $config;
     }
 
     public function getLines(): array
@@ -69,20 +66,16 @@ class Writer
         return $this->lines;
     }
 
-    public function write(): void
+    public function writeToDevelopmentOutput(): void
     {
-        $this->addIntro();
-        $this->addServices();
-        $this->addCache();
-        $this->addAddons();
-        $this->addEnv();
-        $this->addMatrix();
-        $this->addBeforeScript();
-        $this->addScript();
-        $this->addAfterSuccess();
-        $this->addAfterFailure();
-        // TODO: code - update this to replace .travis.yml, though also have a 'debug' mode to output.txt
+        $this->addAllSections();
         file_put_contents('output.txt', implode("\n", $this->lines));
+    }
+
+    public function writeToTravisFile(): void
+    {
+        $this->addAllSections();
+        file_put_contents('.new.travis.yml', implode("\n", $this->lines));
     }
 
     private function addAddons(): void
@@ -130,6 +123,20 @@ class Writer
         }
     }
 
+    private function addAllSections(): void
+    {
+        $this->addIntro();
+        $this->addServices();
+        $this->addCache();
+        $this->addAddons();
+        $this->addEnv();
+        $this->addMatrix();
+        $this->addBeforeScript();
+        $this->addScript();
+        $this->addAfterSuccess();
+        $this->addAfterFailure();
+    }
+
     private function addBeforeScript(): void
     {
         // composer require/install/update cli options:
@@ -144,10 +151,8 @@ class Writer
         $lines[] = '  # Init PHP';
         $lines[] = '  - phpenv rehash';
         $lines[] = '  - phpenv config-rm xdebug.ini';
-        // 4GB ram because a few builds using things like PHPCS seem to require this
-        // Am assuming there's no downside to having all builds to allow PHP to use this much RAM
-        // TODO: ask team - confirm ram usage
-        $lines[] = '  - echo \'memory_limit = 4G\' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini';
+        $memoryLimit = $this->options['memoryLimit'];
+        $lines[] = '  - echo \'memory_limit = ' . $memoryLimit . 'G\' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini';
         $lines[] = '  - echo \'always_populate_raw_post_data = -1\' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini';
         $lines[] = '';
         $lines[] = '  # Install composer requirements';
@@ -155,7 +160,7 @@ class Writer
         $lines[] = '  - composer validate';
         // TODO: analyse travis files - other composer requirements are needed sometimes - will using recipe always be enough?
         $requirements = [
-            'silverstripe/recipe-cms:$RECIPE_VERSION',
+            'silverstripe/installer:$INSTALLER_VERSION',
             'sminnee/phpunit-mock-objects:^3'
         ];
         if ($this->options['behat']) {
@@ -204,18 +209,30 @@ class Writer
 
     private function addEnv(): void
     {
-        $composerRootVersion = $this->options['composerRootVersion'];
         $lines = [
             'env:',
             '  global:',
-            "    - COMPOSER_ROOT_VERSION=\"$composerRootVersion.x-dev\"",
         ];
+        if ($this->options['coreModule']) {
+            // COMPOSER_ROOT_VERSION is used to lock down the module being tested
+            // it's relevant if this module will be a requirement in something else that's a requirement,
+            // usually this will be a recipe.  for if the currently module is silverstripe-asset-admin
+            // and we require silverstripe/recipe-cms, which itself includes silverstripe/asset-admin
+            $composerRootVersion = $this->options['composerRootVersion'];
+            $version = is_numeric($composerRootVersion)
+                ? "$composerRootVersion.x-dev"
+                : "dev-$composerRootVersion";
+            $lines[] = "    - COMPOSER_ROOT_VERSION=\"$version\"";
+        }
         if ($this->options['behat']) {
             // DISPLAY and XVFBARGS are probably not required
             // $lines[] = '    - DISPLAY=":99"';
             // $lines[] = '    - XVFBARGS=":99 -ac -screen 0 1024x768x16"';
             $lines[] = '    - SS_BASE_URL="http://localhost:8080/"';
             $lines[] = '    - SS_ENVIRONMENT_TYPE="dev"';
+        }
+        if (count($lines) == 2) {
+            return;
         }
         $lines[] = '';
         $this->addLines($lines);
@@ -263,7 +280,7 @@ class Writer
 
         $myPhps = $this->buildMyPhps($minMatrixLength);
         $myRecipes = $this->buildMyRecipes($minMatrixLength);
-        $behats = self::MODULE_BEHATS[$this->options['subDirectory']] ?? [];
+        $behats = self::MODULE_BEHATS[$this->options['subPath']] ?? [];
 
         // lines
         $lines = [
@@ -279,7 +296,7 @@ class Writer
             $php = (string)isset($myPhps[$i]) ? $myPhps[$i] : $this->options['phpMax'];
             $data = [];
             $data[] = $this->options['postgres'] && $php == $postgresPhp ? 'DB=PGSQL' : 'DB=MYSQL';
-            $data[] = "RECIPE_VERSION=$recipe.x-dev";
+            $data[] = "INSTALLER_VERSION=$recipe.x-dev";
             $data[] = $this->options['phpCoverage'] && $i == $phpCoverageI ? 'PHPUNIT_COVERAGE_TEST=1' : 'PHPUNIT_TEST=1';
             if ($this->options['phpcs'] && $i == $phpcsI) {
                 $data[] = 'PHPCS_TEST=1';

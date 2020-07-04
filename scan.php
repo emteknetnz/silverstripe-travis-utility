@@ -8,9 +8,10 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 $config = new Config();
 $config->readConfigFile();
-$dir = $config->getValue('dir');
+$dir = $config->getValue('developmentDataDir');
 
-function getModulesToBehats($dir) {
+function getModulesToBehats($dir)
+{
     foreach (glob("$dir/**/.travis.yml") as $path) {
         preg_match('@/([a-zA-Z0-9\-_]+)/\.travis\.yml@', $path, $m);
         $subDirectory = $m[1];
@@ -22,7 +23,8 @@ function getModulesToBehats($dir) {
     }
 }
 
-function getModulesWithBehat($dir) {
+function getModulesWithBehat($dir)
+{
     foreach (glob("$dir/**/.travis.yml") as $path) {
         preg_match('@/([a-zA-Z0-9\-_]+)/\.travis\.yml@', $path, $m);
         $subDirectory = $m[1];

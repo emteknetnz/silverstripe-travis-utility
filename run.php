@@ -11,15 +11,34 @@ $config->readConfigFile();
 
 $reader = new Reader($config);
 
-// TODO: pass in value via CLI
-$subDirectory = 'silverstripe-asset-admin';
+// use current working directory to work out what intention is
+$cwd = realpath(getcwd());
+$doingDevelopment = $cwd == realpath(__DIR__);
 
-// TODO: read .git branch from current dir, pass in to reader/writer to set DEFAULT_RECIPE_MINOR_MIN
-
-$reader->read($subDirectory);
+if ($doingDevelopment) {
+    $subPath = 'silverstripe-asset-admin';
+    $gitBranch = 4.6;
+    $config->setValue('dir', $config->getValue('developmentDataDir'));
+} else {
+    // using program to do actual work, e.g.
+    // cd ~/Modules/silverstripe-asset-admin
+    // php ../../silverstripe-travis-utility/run.php
+    // => /Users/myuser/Modules/silverstripe-asset-admin
+    $subPath = preg_match('@/([^/]+)$@', $cwd, $m);
+    $subPath = $m[1];
+    $gitBranch = shell_exec('git rev-parse --abbrev-ref HEAD');
+    if (preg_match('@pulls/([^/]+)/.+@', $gitBranch, $m)) {
+        $gitBranch = $m[1];
+    }
+    $config->setValue('dir', dirname($cwd));
+}
 
 // read options from reader, overwrite them with anything in .config (with some exceptions)
-$options = [];
+$options = [
+    'subPath' => $subPath,
+    'composerRootVersion' => $gitBranch
+];
+$reader->read($subPath);
 foreach (Writer::OPTION_KEYS as $key) {
     // reader
     $readerValue = $reader->getValue($key);
@@ -40,8 +59,10 @@ foreach (Writer::OPTION_KEYS as $key) {
     }
 }
 
-// TODO: read from git somehow
-$options['composerRootVersion'] = 2.6;
-
-$writer = new Writer($options, $config);
-$writer->write();
+// write output
+$writer = new Writer($options);
+if ($doingDevelopment) {
+    $writer->writeToDevelopmentOutput();
+} else {
+    $writer->writeToTravisFile();
+}

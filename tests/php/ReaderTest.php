@@ -8,11 +8,13 @@ use PHPUnit\Framework\TestCase;
 
 class ReaderTest extends TestCase
 {
+
     public function testA(): void
     {
         $this->readerTest('a.yml', [
             'behat' => false,
             'npm' => false,
+            'memoryLimit' => READER::DEFAULT_MEMORY_LIMIT,
             'pdo' => true,
             'phpcs' => true,
             'phpMin' => 5.6,
@@ -30,6 +32,7 @@ class ReaderTest extends TestCase
         $this->readerTest('b.yml', [
             'behat' => true,
             'npm' => false,
+            'memoryLimit' => 3,
             'pdo' => false,
             'phpcs' => true,
             'phpMin' => 5.6,
@@ -47,6 +50,7 @@ class ReaderTest extends TestCase
         $this->readerTest('c.yml', [
             'behat' => true,
             'npm' => true,
+            'memoryLimit' => 2,
             'pdo' => false,
             'phpcs' => true,
             'phpMin' => 7.1,

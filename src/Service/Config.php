@@ -10,6 +10,10 @@ class Config
 
     /*
      * https://github.com/silverstripeltd/github-issue-search-client/blob/master/src/repos.json
+     * which is itself a super-set of
+     * https://github.com/silverstripe/silverstripe-installer/blob/4/composer.json
+     * https://github.com/silverstripe/recipe-cms/blob/4/composer.json
+     * https://github.com/silverstripe/recipe-core/blob/4/composer.json
      */
     private const CORE_MODULES_DIRECTORIES = [
         "silverstripe-admin",
@@ -30,7 +34,7 @@ class Config
         "silverstripe-versioned",
         "silverstripe-versioned-admin",
         "silverstripe-simple",
-        // newly added:
+        // recently added:
         "silverstripe-login-forms"
     ];
 
