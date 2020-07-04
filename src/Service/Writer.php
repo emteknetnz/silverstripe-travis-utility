@@ -121,25 +121,29 @@ class Writer
         // 4GB ram because a few builds using things like PHPCS seem to require this
         // Am assuming there's no downside to having all builds to allow PHP to use this much RAM
         // TODO: confirm ram usage
-        $lines[] = '  - echo \'memory_limit = 4096M\' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini';
+        $lines[] = '  - echo \'memory_limit = 4G\' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini';
         $lines[] = '  - echo \'always_populate_raw_post_data = -1\' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini';
         $lines[] = '';
         $lines[] = '  # Install composer requirements';
+        $lines[] = '  # sminnee/phpunit-mock-objects is a fix for running phpunit 5 on php 7.4+';
         $lines[] = '  - composer validate';
-        // TODO: other requirements are needed sometimes
-        // TODO: consider including everything together on a single line
-        $lines[] = '  - composer require --no-update silverstripe/recipe-cms:$RECIPE_VERSION';
-        $lines[] = '  # Fix for running phpunit 5 on php 7.4+';
-        $lines[] = '  - composer require --no-update sminnee/phpunit-mock-objects:^3';
-
+        // TODO: other composer requirements are needed sometimes - will using recipe always be enough?
+        // TODO: refactor consider including everything together on a single line
+        $requirements = [
+            'silverstripe/recipe-cms:$RECIPE_VERSION',
+            'sminnee/phpunit-mock-objects:^3'
+        ];
+        if ($this->options['behat']) {
+            $requirements[] = 'silverstripe/recipe-testing:^1';
+        }
+        $lines[] = '  - composer require --no-update ' . implode(' ', $requirements);
         if ($this->options['postgres']) {
             $lines[] = '  - if [[ $DB == PGSQL ]]; then composer require --no-update silverstripe/postgresql:^2; fi';
         }
-        $lines[] = '  - composer install --prefer-dist --no-interaction --no-progress --no-suggest --optimize-autoloader --verbose --profile';
+        $lines[] = '  - composer install --prefer-dist --no-interaction --no-progress --no-suggest --verbose --profile';
         $lines[] = '';
 
         if ($this->options['behat']) {
-
             $lines[] = '  # Remove preinstalled Chrome (google-chrome)';
             $lines[] = '  # this would conflict with our chromium-browser installation';
             $lines[] = '  # and its version is incompatible with chromium-chromedriver';
@@ -210,7 +214,7 @@ class Writer
 
     private function addMatrix(): void
     {
-        // TODO: move these to private const for better visibility?
+        // TODO: refactor move these to private const for better visibility?
         $minMatrixLength = 5;
         $pdoPhp = 7.1;
         $postgresPhp = 7.2;
@@ -224,7 +228,7 @@ class Writer
             die;
         }
 
-        // TODO: move this stuff to private methods
+        // TODO: refactor move this stuff to private methods
 
         // php
         $phps = [5.6, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9];
