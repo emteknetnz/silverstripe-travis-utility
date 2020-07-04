@@ -21,9 +21,6 @@ class Writer
         'subDirectory'
     ];
 
-    // TODO: list of @asset-admin like behat tests based on subdir e.g. silverstripe-asset-admin
-    // possibly should live in a different class
-
     private const MODULE_BEHATS = [
         'silverstripe-admin' => ['@admin', '@cms'],
         'silverstripe-asset-admin' => ['@asset-admin'],
@@ -52,7 +49,9 @@ class Writer
 
     private $lines = [];
 
-    // TODO: make $config non-optional (update unit-tests?)
+    // TODO: $config - consider making $config non-optional (update unit-tests?)
+    // though optional is still kind of good for running scan.php
+    // possibly just don't include it if running inside of a dir such as silverstripe-asset-admin
     public function __construct(array $options, Config $config = null)
     {
         foreach (self::OPTION_KEYS as $key) {
@@ -82,7 +81,7 @@ class Writer
         $this->addScript();
         $this->addAfterSuccess();
         $this->addAfterFailure();
-        // TODO: update this
+        // TODO: code - update this to replace .travis.yml, though also have a 'debug' mode to output.txt
         file_put_contents('output.txt', implode("\n", $this->lines));
     }
 
@@ -147,14 +146,14 @@ class Writer
         $lines[] = '  - phpenv config-rm xdebug.ini';
         // 4GB ram because a few builds using things like PHPCS seem to require this
         // Am assuming there's no downside to having all builds to allow PHP to use this much RAM
-        // TODO: confirm ram usage
+        // TODO: ask team - confirm ram usage
         $lines[] = '  - echo \'memory_limit = 4G\' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini';
         $lines[] = '  - echo \'always_populate_raw_post_data = -1\' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini';
         $lines[] = '';
         $lines[] = '  # Install composer requirements';
         $lines[] = '  # sminnee/phpunit-mock-objects is a fix for running phpunit 5 on php 7.4+';
         $lines[] = '  - composer validate';
-        // TODO: other composer requirements are needed sometimes - will using recipe always be enough?
+        // TODO: analyse travis files - other composer requirements are needed sometimes - will using recipe always be enough?
         $requirements = [
             'silverstripe/recipe-cms:$RECIPE_VERSION',
             'sminnee/phpunit-mock-objects:^3'
@@ -275,7 +274,7 @@ class Writer
         $lastEnv = '';
         $behatN = 0;
         for ($i = 0; $i < count($myRecipes); $i++) {
-            // TODO: confirm we can replace any silverstripe/installer with silverstripe/recipe-cms
+            // TODO: ask team - confirm we can replace any silverstripe/installer with silverstripe/recipe-cms
             $recipe = (string)$myRecipes[$i];
             $php = (string)isset($myPhps[$i]) ? $myPhps[$i] : $this->options['phpMax'];
             $data = [];

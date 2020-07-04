@@ -24,7 +24,7 @@ class Reader
 
     private $data = [];
 
-    // TODO: make $config non-optional (update unit-tests?)
+    // TODO: $config - make $config non-optional (update unit-tests?)
     public function __construct(Config $config = null)
     {
         $this->config = $config;
@@ -43,7 +43,7 @@ class Reader
     public function read(string $subPath): void
     {
         $this->data['coreModule'] = $this->config->isCoreModule($subPath);
-        // TODO: consider getting rid of config dir, as likely will globally run this program
+        // TODO: $config - consider getting rid of config dir, as likely will globally run this program
         // within the directory that you want to update
         $dir = rtrim($this->config->getValue('dir'), '/');
         $path = preg_replace('@/\.travis\.yml$@', '', "$dir/$subPath");
