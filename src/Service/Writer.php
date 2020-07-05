@@ -185,7 +185,7 @@ class Writer
         if ($this->options['subsites']) {
             $lines[] = '  - if [[ $SUBSITES ]]; then composer require --no-update silverstripe/subsites:^2; fi';
         }
-        $lines[] = '  - composer install --prefer-dist --no-interaction --no-progress --no-suggest --verbose --profile';
+        $lines[] = '  - composer install --prefer-dist --no-interaction --no-progress --no-suggest --optimize-autoloader --verbose --profile';
         $lines[] = '';
 
         if ($this->options['behat']) {
@@ -426,6 +426,11 @@ class Writer
     {
         // not including 4.0 because the reader can get confused with 4.x-dev
         // it's also so old that it really doesn't matter
+        // considered :^4 --prefer-lowest, though that does not install 4.0.x-dev, that'll install 4.0.0
+        // which is not what we want for core-modules
+
+        // TODO: special case for cwp 2.6.x-dev https://github.com/silverstripe/cwp/pull/278/files
+
         $recipeMinors = [4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9];
         $recipeMinorMin = $this->options['recipeMinorMin'];
         $recipeMinorMax = $this->options['recipeMinorMax'];
