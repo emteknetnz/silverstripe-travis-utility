@@ -13,6 +13,7 @@ class WriterTest extends TestCase
         $options = [
             'behat' => true,
             'coreModule' => false,
+            'frameworkTest' => false,
             'memoryLimit' => 2,
             'npm' => false,
             'pdo' => true,
@@ -24,7 +25,9 @@ class WriterTest extends TestCase
             'recipeMajor' => 4,
             'recipeMinorMin' => 4.4,
             'recipeMinorMax' => 4.6,
-            'subPath' => 'silverstripe-asset-admin'
+            'srcDir' => 'src',
+            'subPath' => 'silverstripe-asset-admin',
+            'subsites' => false,
         ];
         $expected = [
             'matrix:',
@@ -49,6 +52,7 @@ class WriterTest extends TestCase
         $options = [
             'behat' => true,
             'coreModule' => true,
+            'frameworkTest' => false,
             'memoryLimit' => 2,
             'npm' => true,
             'pdo' => true,
@@ -60,6 +64,8 @@ class WriterTest extends TestCase
             'recipeMinorMin' => 4.4,
             'recipeMinorMax' => 4.6,
             'recipeMajor' => 4,
+            'srcDir' => 'src',
+            'subsites' => false,
             'subPath' => 'silverstripe-installer'
         ];
         $expected = [

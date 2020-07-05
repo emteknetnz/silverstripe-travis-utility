@@ -19,6 +19,8 @@ class Reader
 
     public const DEFAULT_RECIPE_MINOR_MIN = 99.9;
 
+    public const DEFAULT_SRC_DIR = 'src';
+
     /**
      * @var Config
      */
@@ -44,6 +46,9 @@ class Reader
     public function read(string $subPath): void
     {
         $this->data['coreModule'] = $this->config->isCoreModule($subPath);
+        if (!file_exists('src') && file_exists('code')) {
+            $this->data['srcDir'] = 'code';
+        }
         $dir = rtrim($this->config->getValue('dir'), '/');
         $path = preg_replace('@/\.travis\.yml$@', '', "$dir/$subPath");
         $ymlPath = preg_match('@\.yml$@', $path) ? $path : "$path/.travis.yml";
@@ -57,7 +62,6 @@ class Reader
             } elseif (in_array($line, ['before_script:', 'script:'])) {
                 $inMatrix = false;
             }
-            // everything is inside the matrix
             if ($inMatrix) {
                 $this->parseBehat($line);
                 $this->parseNpm($line);
@@ -67,7 +71,9 @@ class Reader
                 $this->parsePhpCoverage($line);
                 $this->parsePostgres($line);
                 $this->parseRecipeVersions($line);
+                $this->parseSubsites($line);
             } else {
+                $this->parseFrameworkTest($line);
                 $this->parseMemoryLimit($line);
             }
         }
@@ -75,10 +81,18 @@ class Reader
 
     private function parseBehat(string $line): void
     {
-        if (!preg_match('/BEHAT_TEST=[1|@]/', $line)) {
+        if (!preg_match('/BEHAT_TEST/', $line)) {
             return;
         }
         $this->data['behat'] = true;
+    }
+
+    private function parseFrameworkTest(string $line): void
+    {
+        if (!preg_match('@silverstripe/frameworktest@', $line)) {
+            return;
+        }
+        $this->data['frameworkTest'] = true;
     }
 
     private function parseMemoryLimit(string $line): void
@@ -163,12 +177,21 @@ class Reader
         }
     }
 
+    private function parseSubsites(string $line): void
+    {
+        if (!preg_match('/SUBSITES=1/', $line)) {
+            return;
+        }
+        $this->data['subsites'] = true;
+    }
+
     private function setDefaultDataValues()
     {
         $this->data = [
             'behat' => false,
             'composerRootVersion' => self::DEFAULT_COMPOSER_ROOT_VERSION,
             'coreModule' => false,
+            'frameworkTest' => false,
             'memoryLimit' => self::DEFAULT_MEMORY_LIMIT,
             'npm' => false,
             'pdo' => false,
@@ -180,6 +203,8 @@ class Reader
             'recipeMinorMin' => self::DEFAULT_RECIPE_MINOR_MIN,
             'recipeMinorMax' => self::DEFAULT_RECIPE_MINOR_MAX,
             'recipeMajor' => self::DEFAULT_RECIPE_MAJOR,
+            'srcDir' => self::DEFAULT_SRC_DIR,
+            'subsites' => false,
         ];
     }
 }

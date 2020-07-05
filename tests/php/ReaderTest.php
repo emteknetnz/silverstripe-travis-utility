@@ -23,7 +23,8 @@ class ReaderTest extends TestCase
             'postgres' => true,
             'recipeMajor' => 4,
             'recipeMinorMin' => 4.4,
-            'recipeMinorMax' => 4.6
+            'recipeMinorMax' => 4.6,
+            'subsites' => false
         ]);
     }
 
@@ -41,7 +42,8 @@ class ReaderTest extends TestCase
             'postgres' => true,
             'recipeMajor' => READER::DEFAULT_RECIPE_MAJOR,
             'recipeMinorMin' => 4.4,
-            'recipeMinorMax' => 4.4
+            'recipeMinorMax' => 4.4,
+            'subsites' => true
         ]);
     }
 
@@ -59,7 +61,8 @@ class ReaderTest extends TestCase
             'postgres' => true,
             'recipeMajor' => READER::DEFAULT_RECIPE_MAJOR,
             'recipeMinorMin' => READER::DEFAULT_RECIPE_MINOR_MIN,
-            'recipeMinorMax' => READER::DEFAULT_RECIPE_MINOR_MAX
+            'recipeMinorMax' => READER::DEFAULT_RECIPE_MINOR_MAX,
+            'subsites' => false
         ]);
     }
 

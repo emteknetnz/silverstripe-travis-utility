@@ -8,6 +8,7 @@ class Writer
     public const OPTION_KEYS = [
         'behat',
         'coreModule',
+        'frameworkTest',
         'memoryLimit',
         'npm',
         'pdo',
@@ -19,7 +20,9 @@ class Writer
         'recipeMinorMin',
         'recipeMinorMax',
         'recipeMajor',
-        'subPath'
+        'srcDir',
+        'subPath',
+        'subsites',
     ];
 
     private const MODULE_BEHATS = [
@@ -76,7 +79,7 @@ class Writer
     public function writeToTravisFile(): void
     {
         $this->addAllSections();
-        file_put_contents('.new.travis.yml', implode("\n", $this->lines));
+        file_put_contents('.travis.yml', implode("\n", $this->lines));
     }
 
     private function addAddons(): void
@@ -144,14 +147,15 @@ class Writer
         // https://getcomposer.org/doc/03-cli.md
         $lines = [];
         $lines[] = 'before_script:';
+        $lines[] = '  # Extra $PATH';
+        $lines[] = '  - export PATH=~/.composer/vendor/bin:$PATH';
         if ($this->options['behat']) {
-            $lines[] = '  # Extra $PATH';
             $lines[] = '  - export PATH=/usr/lib/chromium-browser/:$PATH';
-            $lines[] = '';
         }
+        $lines[] = '';
         $lines[] = '  # Init PHP';
         $lines[] = '  - phpenv rehash';
-        $lines[] = '  - phpenv config-rm xdebug.ini';
+        $lines[] = '  - phpenv config-rm xdebug.ini || true';
         $memoryLimit = $this->options['memoryLimit'];
         $lines[] = '  - echo \'memory_limit = ' . $memoryLimit . 'G\' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini';
         $lines[] = '  - echo \'always_populate_raw_post_data = -1\' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini';
@@ -164,12 +168,18 @@ class Writer
             'silverstripe/installer:$INSTALLER_VERSION',
             'sminnee/phpunit-mock-objects:^3'
         ];
-        if ($this->options['behat']) {
+        if ($this->options['behat'] || $this->options['phpcs']) {
             $requirements[] = 'silverstripe/recipe-testing:^1';
+        }
+        if ($this->options['frameworkTest']) {
+            $requirements[] = 'silverstripe/frameworktest:^0.1.0';
         }
         $lines[] = '  - composer require --no-update ' . implode(' ', $requirements);
         if ($this->options['postgres']) {
             $lines[] = '  - if [[ $DB == PGSQL ]]; then composer require --no-update silverstripe/postgresql:^2; fi';
+        }
+        if ($this->options['subsites']) {
+            $lines[] = '  - if [[ $SUBSITES ]]; then composer require --no-update silverstripe/subsites:^2; fi';
         }
         $lines[] = '  - composer install --prefer-dist --no-interaction --no-progress --no-suggest --verbose --profile';
         $lines[] = '';
@@ -265,6 +275,7 @@ class Writer
     private function addMatrix(): void
     {
         // essentially controls "how many recipe versions back" we go
+        // (actually it basically does nothing TODO: remove)
         $minMatrixLength = 5;
 
         // version of php these option will appear on
@@ -344,7 +355,8 @@ class Writer
         $lines = [];
         $lines[] = '  # Run tests';
         if ($this->options['phpcs']) {
-            $lines[] = '  - if [[ $PHPCS_TEST ]]; then vendor/bin/phpcs src tests *.php --ignore=host-map.php; fi';
+            $srcDir = $this->options['srcDir'];
+            $lines[] = '  - if [[ $PHPCS_TEST ]]; then vendor/bin/phpcs -s ' . $srcDir . '/ tests/ *.php --ignore=host-map.php; fi';
         }
         if ($this->options['npm']) {
             $lines[] = '  - if [[ $NPM_TEST ]]; then git diff-files --quiet -w --relative=client; fi';
