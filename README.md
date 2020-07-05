@@ -13,7 +13,7 @@ Add the following `.config` file inside this directory, update version numbers a
 pdo=1
 phpMin=5.6
 phpMax=7.4
-recipeMinorMin=4.0
+recipeMinorMin=4.1
 recipeMinorMax=4.6
 recipeMajor=4
 # The following is only required for development

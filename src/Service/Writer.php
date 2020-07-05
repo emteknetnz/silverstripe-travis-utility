@@ -165,6 +165,7 @@ class Writer
         $lines[] = '  - composer validate';
         // TODO: analyse travis files - other composer requirements are needed sometimes - will using recipe always be enough?
         $requirements = [
+            // TODO: special case for silverstripe-installer
             'silverstripe/installer:$INSTALLER_VERSION',
             'sminnee/phpunit-mock-objects:^3'
         ];
@@ -173,6 +174,9 @@ class Writer
         }
         if ($this->options['frameworkTest']) {
             $requirements[] = 'silverstripe/frameworktest:^0.1.0';
+        }
+        if ($this->options['subPath'] == 'silverstripe-fulltextsearch') {
+            $requirements[] = 'symbiote/silverstripe-queuedjobs:^4';
         }
         $lines[] = '  - composer require --no-update ' . implode(' ', $requirements);
         if ($this->options['postgres']) {
@@ -420,7 +424,9 @@ class Writer
     // TODO: rename everything in program from "recipe" to "installer"
     private function buildMyRecipes(int $minMatrixLength): array
     {
-        $recipeMinors = [4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9];
+        // not including 4.0 because the reader can get confused with 4.x-dev
+        // it's also so old that it really doesn't matter
+        $recipeMinors = [4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9];
         $recipeMinorMin = $this->options['recipeMinorMin'];
         $recipeMinorMax = $this->options['recipeMinorMax'];
         $recipeMajor = $this->options['recipeMajor'];
