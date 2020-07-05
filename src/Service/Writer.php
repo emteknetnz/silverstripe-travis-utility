@@ -196,7 +196,7 @@ class Writer
             $lines[] = '';
             $lines[] = '  # Start behat services';
             $lines[] = '  - if [[ $BEHAT_TEST ]]; then mkdir artifacts; fi';
-            $lines[] = '  - if [[ $BEHAT_TEST ]]; then cp composer.lock artifacts/; fi';
+            $lines[] = '  - if [[ $BEHAT_TEST ]]; then cp composer.lock artifacts/; composer show -fjson > artifacts/composer-show.json; composer show > artifacts/composer-show.txt; fi';
             $lines[] = '  - if [[ $BEHAT_TEST ]]; then sh -e /etc/init.d/xvfb start; sleep 3; fi';
             $lines[] = '  - if [[ $BEHAT_TEST ]]; then (chromedriver > artifacts/chromedriver.log 2>&1 &); fi';
             $lines[] = '  - if [[ $BEHAT_TEST ]]; then (vendor/bin/serve --bootstrap-file vendor/silverstripe/cms/tests/behat/serve-bootstrap.php &> artifacts/serve.log &); fi';

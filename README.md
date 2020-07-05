@@ -7,6 +7,13 @@ Will read the existing `.travis.yml` file to see if things like behat and npm ne
 Assumes that you use the convention for git branches of `pulls/<version>/whatever` e.g. `pulls/2.6/travis`
 
 ## Installation
+
+Choose any directory where you would like this installed, e.g. 'cd ~'
+
+```
+git clone git@github.com:emteknetnz/silverstripe-travis-utility.git
+```
+
 Add the following `.config` file inside this directory, update version numbers as required
 
 ```
