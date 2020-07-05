@@ -50,7 +50,7 @@ class Writer
 
     private $lines = [];
 
-    public function __construct(array $options)
+    public function __construct(array $options, Config $config = null)
     {
         foreach (self::OPTION_KEYS as $key) {
             if (!isset($options[$key])) {
@@ -59,6 +59,7 @@ class Writer
             }
         }
         $this->options = $options;
+        $this->config = $config;
     }
 
     public function getLines(): array
@@ -224,8 +225,15 @@ class Writer
                 : "dev-$composerRootVersion";
             $lines[] = "    - COMPOSER_ROOT_VERSION=\"$version\"";
         }
+        if ($this->options['npm']) {
+            // possibly don't need this
+            // though not sure if all modules have `.nvmrc` which allows use to rely on `nvm use`
+            $lines[] = '    - TRAVIS_NODE_VERSION="10"';
+        }
         if ($this->options['behat']) {
-            // DISPLAY and XVFBARGS are probably not required
+            // DISPLAY and XVFBARGS are probably not required for xenial
+            // https://docs.travis-ci.com/user/gui-and-headless-browsers/#using-services
+            // https://github.com/silverstripe/silverstripe-admin/pull/1060#discussion_r445132931
             // $lines[] = '    - DISPLAY=":99"';
             // $lines[] = '    - XVFBARGS=":99 -ac -screen 0 1024x768x16"';
             $lines[] = '    - SS_BASE_URL="http://localhost:8080/"';
@@ -343,7 +351,6 @@ class Writer
             $lines[] = '  - if [[ $NPM_TEST ]]; then git diff --name-status --relative=client; fi';
             $lines[] = '  - if [[ $NPM_TEST ]]; then yarn run test; fi';
             $lines[] = '  - if [[ $NPM_TEST ]]; then yarn run lint; fi';
-            $lines[] = '';
         }
         if ($this->options['phpCoverage']) {
             $lines[] = '  - if [[ $PHPUNIT_COVERAGE_TEST ]]; then phpdbg -qrr vendor/bin/phpunit --coverage-clover=coverage.xml; fi';
@@ -380,12 +387,12 @@ class Writer
         $phpMax = $this->options['phpMax'];
         $phpMinI = array_search($phpMin, $phps);
         if ($phpMinI === false || $phpMinI === null) {
-            echo "Invalid phpMin";
+            echo "Invalid phpMin\n";
             die;
         }
         $phpMaxI = array_search($phpMax, $phps);
         if ($phpMinI === false || $phpMinI === null) {
-            echo "Invalid phpMax";
+            echo "Invalid phpMax\n";
             die;
         }
         $myPhps = [];
@@ -398,6 +405,7 @@ class Writer
         return $myPhps;
     }
 
+    // TODO: rename everything in program from "recipe" to "installer"
     private function buildMyRecipes(int $minMatrixLength): array
     {
         $recipeMinors = [4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9];
@@ -407,13 +415,21 @@ class Writer
 
         $recipeMinorMinI = array_search($recipeMinorMin, $recipeMinors);
         if ($recipeMinorMinI === false || $recipeMinorMinI === null) {
-            echo "Invalid recipeMinorMin";
-            die;
+            // recipeMinorMin not found in existing .travis.yml, using value from .config
+            $recipeMinorMinI = array_search($this->config->getValue('recipeMinorMin'), $recipeMinors);
+            if ($recipeMinorMinI === false) {
+                echo "Invalid recipeMinorMin\n";
+                die;
+            }
         }
         $recipeMinorMaxI = array_search($recipeMinorMax, $recipeMinors);
         if ($recipeMinorMaxI === false || $recipeMinorMaxI === null) {
-            echo "Invalid recipeMinorMax";
-            die;
+            // recipeMinorMax not found in existing .travis.yml, using value from .config
+            $recipeMinorMaxI = array_search($this->config->getValue('recipeMinorMax'), $recipeMinors);
+            if ($recipeMinorMaxI === false) {
+                echo "Invalid recipeMinorMax\n";
+                die;
+            }
         }
         $myRecipes = [];
         if ($this->options['coreModule']) {

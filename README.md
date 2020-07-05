@@ -30,3 +30,6 @@ git checkout 2.6
 git checkout -b pulls/2.6/travis
 php ../../silverstripe-travis-utility/run.php
 ```
+
+## Links
+[Unify travis config across modules](https://github.com/silverstripe/silverstripe-framework/issues/9174)

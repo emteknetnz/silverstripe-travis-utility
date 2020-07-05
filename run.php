@@ -60,7 +60,7 @@ foreach (Writer::OPTION_KEYS as $key) {
 }
 
 // write output
-$writer = new Writer($options);
+$writer = new Writer($options, $config);
 if ($doingDevelopment) {
     $writer->writeToDevelopmentOutput();
 } else {

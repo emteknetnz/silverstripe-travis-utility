@@ -14,6 +14,10 @@ class Config
      * https://github.com/silverstripe/silverstripe-installer/blob/4/composer.json
      * https://github.com/silverstripe/recipe-cms/blob/4/composer.json
      * https://github.com/silverstripe/recipe-core/blob/4/composer.json
+     *
+     * We also need to include anything in recipe-testing, notably behat-extension, as this
+     * is used to determine if we need ROOT_COMPOSER_VERSION
+     * https://github.com/silverstripe/recipe-testing/blob/1/composer.json
      */
     private const CORE_MODULES_DIRECTORIES = [
         "silverstripe-admin",
@@ -35,7 +39,10 @@ class Config
         "silverstripe-versioned-admin",
         "silverstripe-simple",
         // recently added:
-        "silverstripe-login-forms"
+        "silverstripe-login-forms",
+        // recipe-testing
+        "silverstripe-behat-extension",
+        "silverstripe/serve"
     ];
 
     private $data = [];
@@ -56,19 +63,12 @@ class Config
      */
     public function readConfigFile(): void
     {
-        $configPath = '';
-        $paths = ['./.config', '../.config', '../../.config'];
-        foreach ($paths as $path) {
-            if (file_exists($path)) {
-                $configPath = $path;
-                break;
-            }
-        }
-        if (empty($configPath)) {
+        $configPath = __DIR__ . '/../../.config';
+        if (!file_exists($configPath)) {
             echo "Could not find .config\n";
             die;
         }
-        $lines = preg_split("/[\r\n]+/", file_get_contents($configPath));
+        $lines = preg_split('/[\r\n]+/', file_get_contents($configPath));
         foreach ($lines as $line) {
             if (empty($line)) {
                 continue;
