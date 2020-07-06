@@ -370,9 +370,8 @@ class Writer
         }
         if ($this->options['phpCoverage']) {
             $lines[] = '  - if [[ $PHPUNIT_COVERAGE_TEST ]]; then phpdbg -qrr vendor/bin/phpunit --coverage-clover=coverage.xml; fi';
-        } else {
-            $lines[] = '  - if [[ $PHPUNIT_TEST ]]; then vendor/bin/phpunit tests/; fi';
         }
+        $lines[] = '  - if [[ $PHPUNIT_TEST ]]; then vendor/bin/phpunit tests/; fi';
         if ($this->options['behat']) {
             $lines[] = '  - if [[ $BEHAT_TEST ]]; then vendor/bin/behat $BEHAT_TEST; fi';
         }
