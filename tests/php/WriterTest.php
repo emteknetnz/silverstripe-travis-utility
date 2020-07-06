@@ -28,6 +28,9 @@ class WriterTest extends TestCase
             'srcDir' => 'src',
             'subPath' => 'silverstripe-asset-admin',
             'subsites' => false,
+            'yarnCoverage' => false,
+            'yarnLint' => false,
+            'yarnTest' => false,
         ];
         $expected = [
             'matrix:',
@@ -66,7 +69,10 @@ class WriterTest extends TestCase
             'recipeMajor' => 4,
             'srcDir' => 'src',
             'subsites' => false,
-            'subPath' => 'silverstripe-installer'
+            'subPath' => 'silverstripe-installer',
+            'yarnCoverage' => false,
+            'yarnLint' => false,
+            'yarnTest' => false,
         ];
         $expected = [
             'matrix:',

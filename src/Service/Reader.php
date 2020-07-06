@@ -75,6 +75,9 @@ class Reader
             } else {
                 $this->parseFrameworkTest($line);
                 $this->parseMemoryLimit($line);
+                $this->parseYarnCoverage($line);
+                $this->parseYarnLint($line);
+                $this->parseYarnTest($line);
             }
         }
     }
@@ -97,7 +100,7 @@ class Reader
 
     private function parseMemoryLimit(string $line): void
     {
-        if (!preg_match('/memory_limit=([0-9]+)([MG])/', $line, $m)) {
+        if (!preg_match('/memory_limit *= *([0-9]+)([MG])/', $line, $m)) {
             return;
         }
         $memoryLimit = $m[1];
@@ -185,6 +188,30 @@ class Reader
         $this->data['subsites'] = true;
     }
 
+    private function parseYarnCoverage(string $line): void
+    {
+        if (!preg_match('/yarn run coverage/', $line)) {
+            return;
+        }
+        $this->data['yarnCoverage'] = true;
+    }
+
+    private function parseYarnLint(string $line): void
+    {
+        if (!preg_match('/yarn run lint/', $line)) {
+            return;
+        }
+        $this->data['yarnLint'] = true;
+    }
+
+    private function parseYarnTest(string $line): void
+    {
+        if (!preg_match('/yarn run test/', $line)) {
+            return;
+        }
+        $this->data['yarnTest'] = true;
+    }
+
     private function setDefaultDataValues()
     {
         $this->data = [
@@ -205,6 +232,9 @@ class Reader
             'recipeMajor' => self::DEFAULT_RECIPE_MAJOR,
             'srcDir' => self::DEFAULT_SRC_DIR,
             'subsites' => false,
+            'yarnCoverage' => false,
+            'yarnLint' => false,
+            'yarnTest' => false,
         ];
     }
 }

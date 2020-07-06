@@ -23,6 +23,9 @@ class Writer
         'srcDir',
         'subPath',
         'subsites',
+        'yarnCoverage',
+        'yarnLint',
+        'yarnTest',
     ];
 
     private const MODULE_BEHATS = [
@@ -119,7 +122,10 @@ class Writer
             'after_success:'
         ];
         if ($this->options['phpCoverage']) {
-            $lines[] = '  - if [[ $PHPUNIT_COVERAGE_TEST ]]; then bash <(curl -s https://codecov.io/bash) -f coverage.xml; fi';
+            $lines[] = '  - if [[ $PHPUNIT_COVERAGE_TEST ]]; then bash <(curl -s https://codecov.io/bash) -f coverage.xml -F php; fi';
+        }
+        if ($this->options['yarnCoverage']) {
+            $lines[] = '  - if [[ $NPM_TEST ]]; then bash <(curl -s https://codecov.io/bash) -F js; fi';
         }
         $lines[] = '';
         if (count($lines) > 2) {
@@ -169,6 +175,9 @@ class Writer
             'silverstripe/installer:$INSTALLER_VERSION',
             'sminnee/phpunit-mock-objects:^3'
         ];
+        if ($this->options['subPath'] == 'silverstripe-comments') {
+            $requirements[] = 'ezyang/htmlpurifier:*';
+        }
         if ($this->options['behat'] || $this->options['phpcs']) {
             $requirements[] = 'silverstripe/recipe-testing:^1';
         }
@@ -364,9 +373,16 @@ class Writer
         }
         if ($this->options['npm']) {
             $lines[] = '  - if [[ $NPM_TEST ]]; then git diff-files --quiet -w --relative=client; fi';
-            $lines[] = '  - if [[ $NPM_TEST ]]; then git diff --name-status --relative=client; fi';
-            $lines[] = '  - if [[ $NPM_TEST ]]; then yarn run test; fi';
-            $lines[] = '  - if [[ $NPM_TEST ]]; then yarn run lint; fi';
+            $lines[] = '  - if [[ $NPM_TEST ]]; then git diff --name-status -w --no-color --relative=client; fi';
+            if ($this->options['yarnTest']) {
+                $lines[] = '  - if [[ $NPM_TEST ]]; then yarn run test; fi';
+            }
+            if ($this->options['yarnLint']) {
+                $lines[] = '  - if [[ $NPM_TEST ]]; then yarn run lint; fi';
+            }
+            if ($this->options['yarnCoverage']) {
+                $lines[] = '  - if [[ $NPM_TEST ]]; then yarn run coverage; fi';
+            }
         }
         if ($this->options['phpCoverage']) {
             $lines[] = '  - if [[ $PHPUNIT_COVERAGE_TEST ]]; then phpdbg -qrr vendor/bin/phpunit --coverage-clover=coverage.xml; fi';
